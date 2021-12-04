@@ -6,11 +6,11 @@ FRICTION_SURFACE_URL = "https://malariaatlas.org/geoserver/ows?service=CSW&versi
 ZIP_FILE_NAME = "friction_surface.zip"
 
 
-def _friction_surface_exists(download_location=ZIP_FILE_NAME):
+def _friction_surface_exists(file_name=ZIP_FILE_NAME):
     """Check whether the friction surface already exists"""
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    files = os.listdir(dir_path)
-    if download_location in files:
+    this_dir = os.path.dirname(os.path.realpath(__file__))
+    files = os.listdir(os.path.join(this_dir, "data"))
+    if file_name in files:
         return True
     return False
 
@@ -29,7 +29,7 @@ def get_friction_surface(url=FRICTION_SURFACE_URL, download_location=ZIP_FILE_NA
                 pretty_downloaded = total_downloaded / 1024 / 1024
                 f.write(data)
                 if pretty_downloaded % 10 == 0:
-                    print(f"Downloaded {pretty_downloaded} MB of approx 520 MB")
+                    print(f"Downloaded {pretty_downloaded} MB of approx 710 MB")
     print("Success")
 
 

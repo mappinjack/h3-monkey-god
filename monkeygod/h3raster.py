@@ -7,34 +7,10 @@ from rasterio.windows import Window
 from pyproj import Proj
 import pandas as pd
 from zipfile import ZipFile
-import boto3
 from collections import namedtuple
 import ntpath
 
-DATA_DIR = os.path.join(pathlib.Path(__file__).parent.absolute().parent, "data")
-OUTPUT_DIR = os.path.join(DATA_DIR, "outputs")
-
-
-class DataGetter:
-    def __init__(self):
-        self.s3 = boto3.resource("s3")
-        self._check_data_dir()
-
-    def download_file(self, bucket, key):
-        file_name = key.split("/")[-1]
-        file_path = os.path.join(DATA_DIR, file_name)
-        if os.path.exists(file_name):
-            return "File already exists"
-        self.s3.Bucket(bucket).download_file(key, file_path)
-
-        if file_name.endswith(".zip"):
-            with ZipFile(file_path, "r") as zip_ref:
-                zip_ref.extractall(DATA_DIR)
-
-    @staticmethod
-    def _check_data_dir():
-        if not os.path.exists(DATA_DIR):
-            os.mkdir(DATA_DIR)
+DATA_DIR = os.path.join(pathlib.Path(__file__).parent.absolute(), "data")
 
 
 HexStore = namedtuple("HexStore", "value count")
@@ -69,7 +45,7 @@ class RasterH3Converter:
         )
 
     @staticmethod
-    def friction_cost_to_minutes(cost, h3_res=6):
+    def friction_cost_to_minutes(cost, h3_res=7):
         """Input is "minutes required to travel one meter"
 
         Args:
@@ -85,7 +61,7 @@ class RasterH3Converter:
         return cost * hex_diameter / 100  # Minutes to cross hex #TODO
 
     @staticmethod
-    def pop_density_to_pop(density, h3_res=6):
+    def pop_density_to_pop(density, h3_res=7):
         """Swap from density to population"""
         area = h3.hex_area(h3_res, unit="km^2")
         return density * area
@@ -97,7 +73,7 @@ class RasterH3Converter:
         top_left=None,
         bottom_right=None,
         conversion_func=None,
-        h3_res=6,
+        h3_res=7,
         break_val=None,
     ):
         """Create a CSV of H3 IDs with friction values from the friction raster
@@ -123,14 +99,14 @@ class RasterH3Converter:
                                 used for testing to exit early when processing a large study area.
 
         Returns:
-            None: Writes a CSV to the OUTPUT_DIR, matching `in_file` file name."""
+            None: Writes a CSV to the DATA_DIR, matching `in_file` file name."""
 
         hexes = {}
         cnt = 0
 
         input_file_name = ntpath.split(in_file)[-1]
         output_file_name = input_file_name.split(".")[0] + ".gz"
-        output_file_path = os.path.join(OUTPUT_DIR, output_file_name)
+        output_file_path = os.path.join(DATA_DIR, output_file_name)
         src = rasterio.open(in_file)
         window = None
         if top_left and bottom_right:
@@ -181,9 +157,10 @@ if __name__ == "__main__":
     # TOP_LEFT_POINT = (55.95, -137.85369)
     # BOTTOM_RIGHT_POINT = (11.7469, -63.27451)
     h3converter = RasterH3Converter()
-    TOP_LEFT_POINT = (48.95, -88.85369)
-    BOTTOM_RIGHT_POINT = (33.7469, -69.27451)
-    friction_path = os.path.join(DATA_DIR, "GLOBAL_FRICTION100.tif")
+    TOP_LEFT_POINT = (16.0054057886, -89.3533259753)
+    BOTTOM_RIGHT_POINT = (12.9846857772, -83.147219001)
+    friction_path = "zip://" + os.path.join(DATA_DIR, "friction_surface.zip")
+    # friction_path = os.path.join(DATA_DIR, "GLOBAL_FRICTION100.tif")
     h3converter.create_h3_from_raster(
         friction_path,
         "min",

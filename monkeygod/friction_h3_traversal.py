@@ -27,8 +27,7 @@ import h3
 import heapq
 import pandas as pd
 
-DATA_DIR = os.path.join(pathlib.Path(__file__).parent.absolute().parent, "data")
-OUTPUT_DIR = os.path.join(DATA_DIR, "outputs")
+DATA_DIR = os.path.join(pathlib.Path(__file__).parent.absolute(), "data")
 
 
 def timer(func):
@@ -44,7 +43,7 @@ def timer(func):
     return wrapper_timer
 
 
-def get_travel_time_hexes_from_csv(file_path="h3_friction_surface.csv"):
+def get_travel_time_hexes_from_csv(file_path="friction_surface.gz"):
     """Load a DataFrame of hexagons with their associated traversal costs
 
     A prerequisite for this is to have pre-calculated the friction surface
@@ -56,8 +55,7 @@ def get_travel_time_hexes_from_csv(file_path="h3_friction_surface.csv"):
     Returns:
         dict: ``{h3_id: {"cost": 10}}``
     """
-    file_path = os.path.join(OUTPUT_DIR, file_path)
-    print(file_path)
+    file_path = os.path.join(DATA_DIR, file_path)
     return pd.read_csv(file_path, index_col="hex").to_dict("index")
 
 
@@ -181,7 +179,7 @@ def calculate_travel_time(
     """Calculate drive time and intervening population.
 
     This function is caches drive time isochrones in the
-    ``data/outputs`` folder, so the distance only needs to
+    ``data`` folder, so the distance only needs to
     be calculated once.
 
     .. warning::
@@ -199,9 +197,12 @@ def calculate_travel_time(
 
     start_hex = h3.geo_to_h3(start[0], start[1], hex_res)
     hex_goal = h3.geo_to_h3(hex_goal[0], hex_goal[1], hex_res)
-    iso_path = os.path.join(OUTPUT_DIR, "test", f"hex_isochrone_{start_hex}.gz")
+    iso_path = os.path.join(DATA_DIR, f"hex_isochrone_{start_hex}.gz")
+    lcp_path = os.path.join(DATA_DIR, f"hex_path_{start_hex}.gz")
     s = datetime.utcnow()
-    came_from, cost_so_far = dijkstra_search(g, start_hex, distance_goal=distance_goal)
+    # TODO accommodate both hex and distance goals
+    came_from, cost_so_far = dijkstra_search(g, start_hex, hex_goal=hex_goal)
+    
     print(f"Search took {(datetime.utcnow() - s).total_seconds()} seconds")
 
     df = pd.DataFrame.from_dict(data=cost_so_far, orient="index").reset_index()
@@ -211,6 +212,14 @@ def calculate_travel_time(
     df.to_csv(iso_path, header=True, index=False, compression="gzip")
     temp_df_cache.clear()
     temp_df_cache[iso_path] = df
+    
+    path = reconstruct_path(came_from, cost_so_far, start_hex, hex_goal)
+    path_df = pd.DataFrame.from_dict(data=path, orient="index").reset_index()
+    path_df.columns = ["hex", "cost"]
+    path_df = path_df[["hex", "cost"]]
+    path_df["origin"] = start_hex
+    path_df.to_csv(lcp_path, header=True, index=False, compression="gzip")
+    
 
     # Optimization to avoid repeatedly opening (and unzipping) raster from disk
     #   If your input Origins are sorted, this will considerably speed up your searches
@@ -233,4 +242,4 @@ def calculate_travel_time(
 if __name__ == "__main__":
     start = (15.462, -87.934)  # Set your start location
     end = (15.350, -84.900)  # Set your end location
-    print(calculate_travel_time(start, end, 396))
+    print(calculate_travel_time(start, end, hex_res=7))
