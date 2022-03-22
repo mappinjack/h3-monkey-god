@@ -10,7 +10,7 @@ Example:
     
 or by importing the module and running :func:`~calculate_travel_time`:
 
-        >>> import friction.friction_h3_traversal
+        >>> import friction_h3_traversal
         >>> friction_h3_traversal.calculate_travel_time((43.79916, -79.336),  (42.50625, -77.027))
         (2412341, 36.7)
 

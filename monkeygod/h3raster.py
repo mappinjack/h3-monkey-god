@@ -154,13 +154,10 @@ class RasterH3Converter:
 
 
 if __name__ == "__main__":
-    # TOP_LEFT_POINT = (55.95, -137.85369)
-    # BOTTOM_RIGHT_POINT = (11.7469, -63.27451)
     h3converter = RasterH3Converter()
-    TOP_LEFT_POINT = (16.0054057886, -89.3533259753)
-    BOTTOM_RIGHT_POINT = (12.9846857772, -83.147219001)
+    TOP_LEFT_POINT = (19.0054057886, -92.3533259753)
+    BOTTOM_RIGHT_POINT = (9.9846857772, -80.147219001)
     friction_path = "zip://" + os.path.join(DATA_DIR, "friction_surface.zip")
-    # friction_path = os.path.join(DATA_DIR, "GLOBAL_FRICTION100.tif")
     h3converter.create_h3_from_raster(
         friction_path,
         "min",
